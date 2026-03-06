@@ -10,7 +10,8 @@ signal health_changed(health_value)
 @export var enemy_raycast : RayCast3D
 
 
-var health = 3
+var health = 100
+var damage = 10
 
 const SPEED = 10.0
 const JUMP_VELOCITY = 10.0
@@ -45,7 +46,7 @@ func _unhandled_input(event):
 		play_shoot_effects.rpc()
 		if raycast.is_colliding():
 			var hit_player = raycast.get_collider()
-			hit_player.receive_damage().rpc_id(hit_player.get_multiplayer_authority())
+			hit_player.receive_damage.rpc_id(hit_player.get_multiplayer_authority())
 		if enemy_raycast.is_colliding():
 			enemy_raycast.get_collider().damage_taken += 1 #replace with signals later
 
@@ -107,7 +108,7 @@ func play_shoot_effects():
 
 @rpc("any_peer")
 func receive_damage():
-	health -= 1
+	health -= damage
 	health_changed.emit(health)
 	if health <= 0:
 		get_tree().change_scene_to_file("res://scenes/lose.tscn")
