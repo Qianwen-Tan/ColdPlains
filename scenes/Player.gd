@@ -4,9 +4,11 @@ signal health_changed(health_value)
 
 @onready var camera = $Camera3D
 @onready var anim_player = $AnimationPlayer
-@onready var muzzle_flash = $Camera3D/Pistol/MuzzleFlash
+@onready var muzzle_flash = $Camera3D/Weapon_management/Pistol/MuzzleFlash
 @onready var raycast = $Camera3D/RayCast3D
 @onready var flashlight = $Camera3D/Hand/SpotLight3D
+@onready var pistol = $Camera3D/Weapon_management/Pistol
+@onready var toygun = $Camera3D/Weapon_management/toygun
 @export var enemy_raycast : RayCast3D
 @export var particle_raycast : RayCast3D
 @export var walk_speed: float = 5.0
@@ -15,7 +17,7 @@ signal health_changed(health_value)
 @export var slide_friction: float = 0.95
 
 var hit_explosion_scene = preload("res://Shaders/hit_explosion.tscn")
-
+var current_weapon 
 var is_sliding: bool = false
 var slide_timer: float = 0.0
 
@@ -36,6 +38,9 @@ func _enter_tree():
 func _ready():
 	if not is_multiplayer_authority(): return
 	
+	pistol.hide()
+	toygun.hide()
+	
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
 	
@@ -50,8 +55,15 @@ func _unhandled_input(event):
 		camera.rotate_x(-event.relative.y * .005)
 		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 	
+	if Input.is_action_just_pressed("swap_to_pistol"):
+		toygun.hide()
+		pistol.show()
+	if Input.is_action_just_pressed("swap_to_toy_gun"):
+		toygun.show()
+		pistol.show()
 	if Input.is_action_just_pressed("shoot") \
 			and anim_player.current_animation != "shoot":
+			#and current_weapon = pistol
 		play_shoot_effects.rpc()
 		if raycast.is_colliding():
 			var hit_player = raycast.get_collider()
@@ -64,6 +76,8 @@ func _unhandled_input(event):
 			var norm = particle_raycast.get_collision_normal()
 			hit_explosion.look_at_from_position(pos, norm + pos, Vector3(0, 0, 1))
 			get_parent().add_child(hit_explosion)
+	else: 
+		pass
 
 
 func _physics_process(delta):
