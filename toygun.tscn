@@ -2,9 +2,47 @@
 
 [ext_resource type="PackedScene" uid="uid://bgj4anlpp5oq4" path="res://models/toy_gun.glb" id="1_f83sm"]
 
+[sub_resource type="Animation" id="Animation_f83sm"]
+length = 0.23333333
+
+[sub_resource type="Animation" id="Animation_5blf2"]
+resource_name = "toygun_shoot"
+length = 0.2
+tracks/0/type = "rotation_3d"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("model")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = PackedFloat32Array()
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("model:rotation")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.03333333, 0.099999994),
+"transitions": PackedFloat32Array(1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 0, 0), Vector3(0, 0, -0.17453292), Vector3(0, 0, 0)]
+}
+
+[sub_resource type="AnimationLibrary" id="AnimationLibrary_eyrc4"]
+_data = {
+&"RESET": SubResource("Animation_f83sm"),
+&"toygun_shoot": SubResource("Animation_5blf2")
+}
+
 [node name="Toygun" type="Node3D" unique_id=1322711870]
 
 [node name="model" type="Node3D" parent="." unique_id=889740191]
 
 [node name="Sketchfab_Scene" parent="model" unique_id=1261384375 instance=ExtResource("1_f83sm")]
-transform = Transform3D(0.0003516361, 0, 0, 0, 0.00052700914, 0, 0, 0, 0.00072762213, 0, 0, 0)
+transform = Transform3D(0.00035163603, 0, 0, 0, 0.00052700914, 0, 0, 0, 0.00060104346, 0, 0, 0)
+
+[node name="RayCast3D" type="RayCast3D" parent="." unique_id=1354034134]
+transform = Transform3D(-0.000852132, 12.256401, 0, -0.9963471, -0.0104823625, 0, 0, 0, 1, -0.1656128, 0, 0)
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1685896112]
+libraries/ = SubResource("AnimationLibrary_eyrc4")

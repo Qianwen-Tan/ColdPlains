@@ -46,7 +46,7 @@ func _unhandled_input(event):
 		rotate_y(-event.relative.x * .005)
 		camera.rotate_x(-event.relative.y * .005)
 		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
-	
+	#if current_weapon 
 	if Input.is_action_just_pressed("shoot") \
 			and anim_player.current_animation != "shoot":
 		play_shoot_effects.rpc()
