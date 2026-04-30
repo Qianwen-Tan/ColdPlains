@@ -58,7 +58,7 @@ func _unhandled_input(event):
 		camera.rotate_x(-event.relative.y * .005)
 		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 	
-	if Input.is_action_just_pressed("shoot") \
+	if Input.is_action_pressed("shoot") \
 			and not is_dead \
 			and (anim_player.current_animation != "shoot" or no_cooldown):
 		play_shoot_effects.rpc()
@@ -113,8 +113,9 @@ func _physics_process(delta):
 			velocity.x = direction.x * SPEED
 			velocity.z = direction.z * SPEED
 		else:
-			velocity.x = move_toward(velocity.x, 0, SPEED)
-			velocity.z = move_toward(velocity.z, 0, SPEED)
+			var damping_value = 10 # Number of frames before horizontal velocity is reduced to 0. Replace later with a more inclusive system
+			velocity.x = move_toward(velocity.x, 0, SPEED / damping_value * abs(velocity.normalized().x))
+			velocity.z = move_toward(velocity.z, 0, SPEED / damping_value * abs(velocity.normalized().z))
 
 	# --- New: Handle Camera Look (Right Stick) ---
 	var look_dir = Input.get_vector("look_left", "look_right", "look_up", "look_down")
