@@ -2,17 +2,13 @@ extends CharacterBody3D
 
 signal health_changed(health_value)
 
-@onready var camera = $Camera3D
-@onready var anim_player = $AnimationPlayer
-@onready var muzzle_flash = $Camera3D/Weapon_management/Pistol/MuzzleFlash
-@onready var weapon_management = $Camera3D/Weapon_management
-@onready var pistol = $Camera3D/Weapon_management/Pistol
-@onready var toygun = $Camera3D/Weapon_management/toygun
-@onready var uzi = $Camera3D/Weapon_management/Uzi
-@onready var Uzi_muzzle_flash = $Camera3D/Weapon_management/Uzi/UMuzzleFlash
-@onready var raycast = $Camera3D/RayCast3D
-@onready var flashlight = $Camera3D/Hand/SpotLight3D
-@onready var health_bar = $CanvasLayer/HUD/HealthBar
+@onready var collision_shape = $CollisionShape3D
+@export var camera : Camera3D
+@export var anim_player : AnimationPlayer
+@export var muzzle_flash : GPUParticles3D
+@export var raycast : RayCast3D
+@export var flashlight : SpotLight3D
+@export var health_bar : ProgressBar
 @export var enemy_raycast : RayCast3D
 @export var particle_raycast : RayCast3D
 @export var walk_speed: float = 5.0
@@ -32,12 +28,19 @@ var is_dead: bool = false
 var health = 100
 var damage = 10
 
-const SPEED = 10.0
-const JUMP_VELOCITY = 10.0
+var SPEED = 10.0
+var JUMP_VELOCITY = 10.0
 const LOOK_SPEED = 5 # Adjust as needed for controller comfort
 
 # Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = 20.0
+
+var crouch_height = 0.5
+var stand_height = 2.0
+var is_crouched = false
+var crouch_speed = 3
+var crouch_jump_velocity = 3
+const CROUCH_TRANSLATE = 0.7
 
 func _enter_tree():
 	print(name)
@@ -64,14 +67,15 @@ func _unhandled_input(event):
 		camera.rotate_x(-event.relative.y * .005)
 		camera.rotation.x = clamp(camera.rotation.x, -PI/2, PI/2)
 	
-	if (Input.is_action_just_pressed("shoot") and not is_dead) or (Input.is_action_pressed("shoot") and no_cooldown):
+	if Input.is_action_pressed("shoot") \
+			and not is_dead \
+			and (anim_player.current_animation != "shoot" or no_cooldown):
 		if current_weapon == pistol:
 			anim_player.play("shoot")
 		elif current_weapon == uzi:
 			anim_player.play("uzi_shoot")
 		elif current_weapon == toygun:
 			anim_player.play("shoot")
-		
 		play_shoot_effects.rpc()
 		if raycast.is_colliding():
 			var hit_player = raycast.get_collider()
@@ -82,7 +86,7 @@ func _unhandled_input(event):
 			var hit_explosion = hit_explosion_scene.instantiate()
 			var pos = particle_raycast.get_collision_point()
 			var norm = particle_raycast.get_collision_normal()
-			hit_explosion.look_at_from_position(pos, norm + pos, Vector3(0, 0, 1))
+			hit_explosion.look_at_from_position(pos, norm + pos)
 			get_parent().add_child(hit_explosion)
 
 
@@ -91,6 +95,8 @@ func _unhandled_input(event):
 func _physics_process(delta):
 	if not is_multiplayer_authority() or is_dead: 
 		return
+	
+	_handle_crouch(delta)
 	
 	# Add the gravity.
 	if not is_on_floor():
@@ -126,8 +132,9 @@ func _physics_process(delta):
 			velocity.x = direction.x * SPEED
 			velocity.z = direction.z * SPEED
 		else:
-			velocity.x = move_toward(velocity.x, 0, SPEED)
-			velocity.z = move_toward(velocity.z, 0, SPEED)
+			var damping_value = 10 # Number of frames before horizontal velocity is reduced to 0. Replace later with a more inclusive system
+			velocity.x = move_toward(velocity.x, 0, SPEED / damping_value * abs(velocity.normalized().x))
+			velocity.z = move_toward(velocity.z, 0, SPEED / damping_value * abs(velocity.normalized().z))
 
 	# --- New: Handle Camera Look (Right Stick) ---
 	var look_dir = Input.get_vector("look_left", "look_right", "look_up", "look_down")
@@ -208,6 +215,21 @@ func receive_damage():
 		#health = 3
 		#position = Vector3.ZERO
 
+		
+
+func _handle_crouch(delta) -> void:
+	if is_crouched: 
+		SPEED = crouch_speed 
+		JUMP_VELOCITY = crouch_jump_velocity
+	else: 
+		SPEED = 10
+		JUMP_VELOCITY = 10
+	
+	is_crouched = Input.is_action_pressed("crouch")
+	camera.position = Vector3(0,(CROUCH_TRANSLATE if is_crouched else 1.513),0)
+	$CollisionShape3D.shape.height = stand_height - CROUCH_TRANSLATE if is_crouched else stand_height
+	$CollisionShape3D.position.y = $CollisionShape3D.shape.height / 2
+	
 @rpc("any_peer")
 func die():
 	if is_dead:
