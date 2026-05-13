@@ -209,5 +209,6 @@ func die():
 	set_physics_process(false)
 	hide()
 	$CollisionShape3D.disabled = true
+	
 	if is_multiplayer_authority():
 		get_tree().call_group("ui","show_lose_screen")
