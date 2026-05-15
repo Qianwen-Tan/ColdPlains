@@ -30,16 +30,14 @@ var can_shoot: bool = true
 var is_sliding: bool = false
 var slide_timer: float = 0.0
 var is_dead: bool = false
-#var player_id: int 
 
 var health = 100
 var damage = 10
 
 var SPEED = 10.0
 var JUMP_VELOCITY = 10.0
-const LOOK_SPEED = 5 # Adjust as needed for controller comfort
+const LOOK_SPEED = 5
 
-# Get the gravity from the project settings to be synced with RigidBody nodes.
 var gravity = 20.0
 
 var crouch_height = 0.5
@@ -54,17 +52,12 @@ func _enter_tree():
 	set_multiplayer_authority(str(name).to_int())
 
 func _ready():
-	if not is_multiplayer_authority(): return
-	#switch_weapons(pistol)
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	camera.current = true
-	
-	if not is_multiplayer_authority(): return
+	if not is_multiplayer_authority(): 
+		return
 	
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
 	
-	# Hide health bar UI for other players
 	$CanvasLayer.visible = true
 
 func _exit_tree() -> void:
@@ -114,26 +107,20 @@ func _physics_process(delta):
 	
 	_handle_crouch(delta)
 	
-	# Add the gravity.
 	if not is_on_floor():
 		velocity.y -= gravity * delta
-	
-	# Handle Jump.
 	if Input.is_action_pressed("ui_accept") and is_on_floor():
 		velocity += JUMP_VELOCITY * get_floor_normal()
 		
-	#Toggle Flashlight 
 	if Input.is_action_just_pressed("toggle_flashlight"):
 		flashlight.visible = not flashlight.visible
 
-	# Handle slide input
 	if Input.is_action_just_pressed("slide") and is_on_floor():
 		var input_dir = Input.get_vector("left", "right", "up", "down")
 		var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 		if direction != Vector3.ZERO and not is_sliding:
 			start_slide(direction)
 
-	# Update slide
 	if is_sliding:
 		slide_timer += delta
 		velocity.x *= slide_friction
@@ -141,18 +128,16 @@ func _physics_process(delta):
 		if slide_timer >= slide_duration:
 			is_sliding = false
 	else:
-		# Get the input direction and handle the movement/deceleration.
 		var input_dir = Input.get_vector("left", "right", "up", "down")
 		var direction = (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 		if direction:
 			velocity.x = direction.x * SPEED
 			velocity.z = direction.z * SPEED
 		else:
-			var damping_value = 10 # Number of frames before horizontal velocity is reduced to 0. Replace later with a more inclusive system
+			var damping_value = 10
 			velocity.x = move_toward(velocity.x, 0, SPEED / damping_value * abs(velocity.normalized().x))
 			velocity.z = move_toward(velocity.z, 0, SPEED / damping_value * abs(velocity.normalized().z))
 
-	# --- New: Handle Camera Look (Right Stick) ---
 	var look_dir = Input.get_vector("look_left", "look_right", "look_up", "look_down")
 	
 	if look_dir != Vector2.ZERO:
@@ -190,15 +175,18 @@ func perform_shooting_logic():
 		var hit_player = raycast.get_collider()
 		hit_player.receive_damage.rpc_id(hit_player.get_multiplayer_authority())
 		
-	if enemy_raycast.is_colliding():
-		enemy_raycast.get_collider().damage_taken += damage
 
-	if particle_raycast.is_colliding():
-		var hit_explosion = hit_explosion_scene.instantiate()
-		var pos = particle_raycast.get_collision_point()
-		var norm = particle_raycast.get_collision_normal()
-		hit_explosion.look_at_from_position(pos, norm + pos)
-		get_parent().add_child(hit_explosion)
+		if raycast.is_colliding():
+			var hit_player = raycast.get_collider()
+			hit_player.receive_damage.rpc()
+		if enemy_raycast.is_colliding():
+			enemy_raycast.get_collider().damage_taken += damage
+		if particle_raycast.is_colliding():
+			var hit_explosion = hit_explosion_scene.instantiate()
+			var pos = particle_raycast.get_collision_point()
+			var norm = particle_raycast.get_collision_normal()
+			hit_explosion.look_at_from_position(pos, norm + pos)
+			get_parent().add_child(hit_explosion)
 
 func switch_weapons(selected_weapon):
 	#Hide all weapons
@@ -251,13 +239,19 @@ func play_shoot_effects():
 
 @rpc("any_peer", "call_local")
 func receive_damage():
+	print("receive_damage() called on player:", name)
 	if is_dead:
+		print("Player is already dead, ignoring damage")
 		return
 
 	health -= damage
+	print("Health reduced to:", health)
 	health_changed.emit(health)
+	print("health_changed signal emitted with value:", health)
 	
 	if health <= 0:
+		print("Player dead, calling die()")
+		is_dead = true
 		rpc("die")
 
 func _handle_crouch(delta) -> void:
