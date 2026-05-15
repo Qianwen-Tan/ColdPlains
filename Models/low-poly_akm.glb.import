@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://3tk255sadi0p"
-path="res://.godot/imported/low-poly_akm.glb-4e06a98775298951e15685dccda3bd6f.scn"
+path="res://.godot/imported/low-poly_akm.glb-23d209733ed8f18f65363f5504e95978.scn"
 
 [deps]
 
-source_file="res://models/low-poly_akm.glb"
-dest_files=["res://.godot/imported/low-poly_akm.glb-4e06a98775298951e15685dccda3bd6f.scn"]
+source_file="res://Models/low-poly_akm.glb"
+dest_files=["res://.godot/imported/low-poly_akm.glb-23d209733ed8f18f65363f5504e95978.scn"]
 
 [params]
 

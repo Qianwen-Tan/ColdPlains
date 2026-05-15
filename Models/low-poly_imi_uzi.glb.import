@@ -4,12 +4,12 @@ importer="scene"
 importer_version=1
 type="PackedScene"
 uid="uid://d4jwmgrgu53l6"
-path="res://.godot/imported/low-poly_imi_uzi.glb-92a3193a40949a395c0d9ea2465eea53.scn"
+path="res://.godot/imported/low-poly_imi_uzi.glb-94f58671092f4ef4ff31617d5fd7a94d.scn"
 
 [deps]
 
-source_file="res://models/low-poly_imi_uzi.glb"
-dest_files=["res://.godot/imported/low-poly_imi_uzi.glb-92a3193a40949a395c0d9ea2465eea53.scn"]
+source_file="res://Models/low-poly_imi_uzi.glb"
+dest_files=["res://.godot/imported/low-poly_imi_uzi.glb-94f58671092f4ef4ff31617d5fd7a94d.scn"]
 
 [params]
 
