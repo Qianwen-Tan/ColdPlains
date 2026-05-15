@@ -1,6 +1,7 @@
 extends CharacterBody3D
 
 signal health_changed(health_value)
+
 @onready var collision_shape = $CollisionShape3D
 @onready var pistol = $Camera3D/Weapon_management/Pistol
 @onready var toygun = $Camera3D/Weapon_management/toygun
@@ -8,12 +9,11 @@ signal health_changed(health_value)
 @onready var Uzi_muzzle_flash = $Camera3D/Weapon_management/Uzi/UMuzzleFlash
 @onready var rifle = $Camera3D/Weapon_management/Rifle
 @onready var rifle_muzzle_flash = $Camera3D/Weapon_management/Rifle/RMuzzleFlash
-@onready var raycast = $Camera3D/RayCast3D
-@onready var flashlight = $Camera3D/Hand/SpotLight3D
-@onready var health_bar = $CanvasLayer/HUD/HealthBar
-@onready var camera = $Camera3D
-@onready var anim_player = $AnimationPlayer
-@onready var muzzle_flash = $Camera3D/Weapon_management/Pistol/MuzzleFlash
+@export var camera : Camera3D
+@export var anim_player : AnimationPlayer
+@export var muzzle_flash : GPUParticles3D
+@export var raycast : RayCast3D
+@export var flashlight : Node3D
 @export var enemy_raycast : RayCast3D
 @export var particle_raycast : RayCast3D
 @export var walk_speed: float = 5.0
@@ -32,8 +32,8 @@ var slide_timer: float = 0.0
 var is_dead: bool = false
 #var player_id: int 
 
-var health = 3
-var damage = 3
+var health = 100
+var damage = 10
 
 var SPEED = 10.0
 var JUMP_VELOCITY = 10.0
@@ -53,15 +53,20 @@ func _enter_tree():
 	print(name)
 	set_multiplayer_authority(str(name).to_int())
 
-func _on_health_changed(health_value):\
-	health_bar.value = health_value 
-
 func _ready():
 	if not is_multiplayer_authority(): return
 	#switch_weapons(pistol)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
 	
+	if not is_multiplayer_authority(): return
+	
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	camera.current = true
+	
+	# Hide health bar UI for other players
+	$CanvasLayer.visible = true
+
 func _exit_tree() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -114,17 +119,9 @@ func _physics_process(delta):
 		velocity.y -= gravity * delta
 	
 	# Handle Jump.
-	if Input.is_action_just_pressed("ui_accept") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
-	
-	# Adjust this segment to avoid switching to idle if shooting
-	if anim_player.current_animation == "shoot":
-		pass  # Don’t change state when shooting
-	elif Input.get_vector("left", "right", "up", "down") != Vector2.ZERO and is_on_floor():
-		anim_player.play("move")
-	else:
-		anim_player.play("idle")
-
+	if Input.is_action_pressed("ui_accept") and is_on_floor():
+		velocity += JUMP_VELOCITY * get_floor_normal()
+		
 	#Toggle Flashlight 
 	if Input.is_action_just_pressed("toggle_flashlight"):
 		flashlight.visible = not flashlight.visible
@@ -252,24 +249,16 @@ func play_shoot_effects():
 
 
 
-@rpc("any_peer")
+@rpc("any_peer", "call_local")
 func receive_damage():
 	if is_dead:
 		return
 
 	health -= damage
-	if is_multiplayer_authority():
-		if health_bar:
-			health_bar.value = health
 	health_changed.emit(health)
 	
 	if health <= 0:
 		rpc("die")
-		#get_tree().change_scene_to_file("res://scenes/lose.tscn")
-		#health = 3
-		#position = Vector3.ZERO
-
-		
 
 func _handle_crouch(delta) -> void:
 	if is_crouched: 
@@ -294,5 +283,6 @@ func die():
 	set_physics_process(false)
 	hide()
 	$CollisionShape3D.disabled = true
+	
 	if is_multiplayer_authority():
 		get_tree().call_group("ui","show_lose_screen")
