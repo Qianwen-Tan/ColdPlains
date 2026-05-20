@@ -264,8 +264,8 @@ func _handle_crouch(delta) -> void:
 
 @rpc("authority", "call_local")
 func die():
-	if is_dead:
-		return
+	#if is_dead:
+		#return
 	velocity = Vector3.ZERO
 	set_process(false)
 	set_physics_process(false)
